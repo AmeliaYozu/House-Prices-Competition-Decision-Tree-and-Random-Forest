@@ -2,12 +2,13 @@ import pandas as pd
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import LabelEncoder
 from sklearn.impute import SimpleImputer
 
 data = pd.read_csv("../input/house-prices-advanced-regression-techniques/train.csv")
 test = pd.read_csv("../input/house-prices-advanced-regression-techniques/test.csv")
+test_id = test.Id
 
 data_y = data["SalePrice"]
 data_X = data.drop(columns = "SalePrice")
@@ -41,41 +42,33 @@ data_X[data_X_categorical_cols] = data_X[data_X_categorical_cols].apply(lambda c
 (train_X, val_X, train_y, val_y) = train_test_split(data_X, data_y)
 
 #Decison tree model training
-# nodes = [10,20,50,100,200,500,1000]
-# for n in nodes:
-#     dt_model = DecisionTreeRegressor(max_leaf_nodes=n,criterion='mae',random_state=1)
-#     dt_model.fit(train_X, train_y)
-#     preds = dt_model.predict(val_X)
-#     mae = mean_absolute_error(preds, val_y)
-#     print("leaf nodes {} : MAE {}".format(n, mae))
+nodes = [5,10,50,100,500,1000]
+for n in nodes:
+    dt_model = DecisionTreeRegressor(max_leaf_nodes=n,criterion = 'mse', random_state=1)
+    dt_model.fit(train_X, train_y)
+    preds = dt_model.predict(val_X)
+    log_rmse = mean_squared_error(np.log(preds), np.log(val_y))**0.5
+    print("leaf nodes {} : log RMSE {}".format(n, log_rmse))
 
 # max_leaf_nodes = 100 ~ minimum
-# leaf nodes 10 : MAE 25525.227397260274
-# leaf nodes 20 : MAE 24756.156164383563
-# leaf nodes 50 : MAE 23642.038356164383
-# leaf nodes 100 : MAE 23048.54794520548
-# leaf nodes 200 : MAE 23078.01506849315
-# leaf nodes 500 : MAE 23529.8602739726
-# leaf nodes 1000 : MAE 23645.746575342466
 
 #predict test
-dt_model = DecisionTreeRegressor(max_leaf_nodes=100,criterion='mae',random_state=1)
+dt_model = DecisionTreeRegressor(max_leaf_nodes=100,random_state=1)
 dt_model.fit(data_X, data_y)
 preds = dt_model.predict(test)
 
-output = pd.DataFrame({"Id":test.Id, "SalePrice":preds})
-output.to_csv("dt_with_categorical_submission.csv", index=False)
+output = pd.DataFrame({"Id":test_id, "SalePrice":preds})
+output.to_csv("dt_with_categorical_2_submission.csv", index=False)
 
 #random forest model validation
-rf_model = RandomForestRegressor(random_state=1)
+rf_model = RandomForestRegressor(random_state=42)
 rf_model.fit(train_X, train_y)
 preds = dt_model.predict(val_X)
-mae = mean_absolute_error(preds, val_y)
-print("MAE: "+str(mae))
-# MAE: 12704.689041095891
+log_rmse = mean_squared_error(np.log(preds), np.log(val_y))**0.5
+print("Random Forest log rmse: "+str(log_rmse))
 
 #predict
 rf_model.fit(data_X,data_y)
 preds = rf_model.predict(test)
-rf_output = pd.DataFrame({"Id":test.Id, "SalePrice":preds})
-rf_output.to_csv("rf_with_all_categorical_submission.csv", index=False)
+rf_output = pd.DataFrame({"Id":test_id, "SalePrice":preds})
+rf_output.to_csv("rf_with_all_categorical_2_submission.csv", index=False)
